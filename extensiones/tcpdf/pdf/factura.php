@@ -1,5 +1,5 @@
 <?php
-
+ob_start()
 require_once "../../../controladores/ventas.controlador.php";
 require_once "../../../modelos/ventas.modelo.php";
 
@@ -294,7 +294,7 @@ $pdf->writeHTML($bloque5, false, false, false, false, '');
 
 //$pdf->Output('factura.pdf', 'D');
 ob_end_clean();
-$pdf->Output('factura.pdf');
+$pdf->Output('factura.pdf', 'D');
 
 }
 
