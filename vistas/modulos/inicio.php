@@ -28,7 +28,7 @@
 
     if($_SESSION["perfil"] =="Administrador"){
 
-      include "inicio/cajas-superiores.php";
+      include "cajas-superiores.php";
 
     }
 
