@@ -778,13 +778,22 @@ $(".tablas").on("click", ".btnEliminarVenta", function(){
 IMPRIMIR FACTURA
 =============================================*/
 
-$(".tablas").on("click", ".btnImprimirFactura", function(){
+// $(".tablas").on("click", ".btnImprimirFactura", function(){
 
-	var codigoVenta = $(this).attr("codigoVenta");
+// 	var codigoVenta = $(this).attr("codigoVenta");
 
-	window.open("extensiones/tcpdf/pdf/factura.php?codigo="+codigoVenta, "_blank"); 
+// 	window.open("extensiones/tcpdf/pdf/factura.php?codigo="+codigoVenta, "_blank"); 
 
-})
+// })
+
+/*=============================================
+IMPRIMIR FACTURA PDF (Nueva Implementación)
+=============================================*/
+$(document).on("click", ".jsImprimirFacturaPDF", function(e){
+    e.preventDefault(); 
+    var codigoVenta = $(this).attr("codigoVenta");
+    window.open("index.php?ruta=factura-pdf&codigoVenta=" + codigoVenta, "_blank");
+});
 
 /*=============================================
 IMPRIMIR Ticket
