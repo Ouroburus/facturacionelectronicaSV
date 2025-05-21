@@ -767,4 +767,188 @@ class ControladorVentas{
 
 	}
 
+	/*=============================================
+	GENERAR FACTURA PDF
+	=============================================*/
+	static public function ctrGenerarFacturaPDF(){
+
+		if(isset($_GET["codigoVenta"])){
+
+			require_once 'extensiones/vendor/tecnickcom/tcpdf/tcpdf.php';
+
+			$tablaVentas = "ventas";
+			$itemVenta = "codigo";
+			$valorVenta = $_GET["codigoVenta"];
+			$traerVenta = ModeloVentas::mdlMostrarVentas($tablaVentas, $itemVenta, $valorVenta);
+
+			$listaProductos = json_decode($traerVenta["productos"], true);
+
+			$tablaClientes = "clientes";
+			$itemCliente = "id";
+			$valorCliente = $traerVenta["id_cliente"];
+			$traerCliente = ModeloClientes::mdlMostrarClientes($tablaClientes, $itemCliente, $valorCliente);
+
+			$tablaVendedor = "usuarios";
+			$itemVendedor = "id";
+			$valorVendedor = $traerVenta["id_vendedor"];
+			$traerVendedor = ModeloUsuarios::mdlMostrarUsuarios($tablaVendedor, $itemVendedor, $valorVendedor);
+
+			// Crear nuevo documento PDF
+			$pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+
+			// Establecer información del documento
+			$pdf->SetCreator(PDF_CREATOR);
+			$pdf->SetAuthor('Mi Tienda');
+			$pdf->SetTitle('Factura Electrónica - '.$_GET["codigoVenta"]);
+			$pdf->SetSubject('Factura');
+			$pdf->SetKeywords('TCPDF, PDF, factura, venta, electronica');
+
+			// Establecer datos de cabecera y pie de página
+			// Asumiendo que tienes una imagen de logo en 'vistas/img/plantilla/logo.png'
+			// Reemplaza 'K_PATH_IMAGES.'logo.png'' si tu logo está en otra parte o elimina/comenta si no tienes logo
+			$pdf->SetHeaderData('logo.png', PDF_HEADER_LOGO_WIDTH, 'Factura Electrónica', "NIT: 123456789-0\nDirección: Calle Falsa 123\nTeléfono: +57 300 123 4567", array(0,64,255), array(0,64,128));
+			$pdf->setFooterData(array(0,64,0), array(0,64,128));
+			
+			$pdf->setHeaderFont(Array(PDF_FONT_NAME_MAIN, '', PDF_FONT_SIZE_MAIN));
+			$pdf->setFooterFont(Array(PDF_FONT_NAME_DATA, '', PDF_FONT_SIZE_DATA));
+
+			// Establecer fuente monoespaciada por defecto
+			$pdf->SetDefaultMonospacedFont(PDF_FONT_MONOSPACED);
+
+			// Establecer márgenes
+			$pdf->SetMargins(PDF_MARGIN_LEFT, PDF_MARGIN_TOP, PDF_MARGIN_RIGHT);
+			$pdf->SetHeaderMargin(PDF_MARGIN_HEADER);
+			$pdf->SetFooterMargin(PDF_MARGIN_FOOTER);
+
+			// Establecer saltos de página automáticos
+			$pdf->SetAutoPageBreak(TRUE, PDF_MARGIN_BOTTOM);
+
+			// Establecer factor de escala de imagen
+			$pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
+
+			// Añadir una página
+			$pdf->AddPage();
+
+			// Establecer fuente
+			$pdf->SetFont('helvetica', '', 10);
+
+			// Contenido HTML para la factura
+			$html = '
+			<style>
+				h1 {
+					text-align: center;
+					color: #333;
+				}
+				table {
+					width: 100%;
+					border-collapse: collapse;
+					margin-bottom: 20px;
+				}
+				th, td {
+					border: 1px solid #ddd;
+					padding: 8px;
+					text-align: left;
+				}
+				th {
+					background-color: #f2f2f2;
+				}
+				.total-details td {
+					text-align: right;
+				}
+				.company-details {
+					text-align: right;
+					margin-bottom: 20px;
+				}
+			</style>
+			';
+
+			// Logo y nombre de la empresa (Ajusta la ruta del logo)
+			// $pdf->Image('vistas/img/plantilla/logo-grande.png', 15, 15, 40, '', 'PNG'); // Ajusta la ruta y dimensiones
+			$html .= '<div class="company-details">
+						<h2>Mi Tienda S.A.S.</h2>
+						<p>NIT: 123.456.789-0</p>
+						<p>Dirección: Calle Falsa 123, Ciudad</p>
+						<p>Teléfono: (123) 456-7890</p>
+					</div>';
+			
+			$html .= '<h1>FACTURA DE VENTA</h1>';
+			
+			$html .= '<p><strong>Factura No:</strong> '.$traerVenta["codigo"].'</p>';
+			$html .= '<p><strong>Fecha:</strong> '.$traerVenta["fecha"].'</p>';
+			
+			$html .= '<h3>Cliente:</h3>';
+			$html .= '<p><strong>Nombre:</strong> '.$traerCliente["nombre"].'</p>';
+			$html .= '<p><strong>Documento:</strong> '.$traerCliente["documento"].'</p>';
+			$html .= '<p><strong>Email:</strong> '.$traerCliente["email"].'</p>';
+			$html .= '<p><strong>Teléfono:</strong> '.$traerCliente["telefono"].'</p>';
+			$html .= '<p><strong>Dirección:</strong> '.$traerCliente["direccion"].'</p>';
+
+			$html .= '<h3>Vendedor:</h3>';
+			$html .= '<p><strong>Nombre:</strong> '.$traerVendedor["nombre"].'</p>';
+			
+			$html .= '<h3>Productos:</h3>';
+			$html .= '<table>
+						<thead>
+							<tr>
+								<th>Descripción</th>
+								<th>Cantidad</th>
+								<th>Precio Unit.</th>
+								<th>Precio Total</th>
+							</tr>
+						</thead>
+						<tbody>';
+			
+			foreach ($listaProductos as $key => $value) {
+				$html .= '<tr>
+							<td>'.$value["descripcion"].'</td>
+							<td>'.$value["cantidad"].'</td>
+							<td>$ '.number_format($value["precio"], 2).'</td>
+							<td>$ '.number_format($value["total"], 2).'</td>
+						  </tr>';
+			}
+			
+			$html .= '</tbody></table>';
+
+			$html .= '<table class="total-details">
+						<tr>
+							<td><strong>NETO:</strong></td>
+							<td>$ '.number_format($traerVenta["neto"], 2).'</td>
+						</tr>
+						<tr>
+							<td><strong>IMPUESTO:</strong></td>
+							<td>$ '.number_format($traerVenta["impuesto"], 2).'</td>
+						</tr>
+						<tr>
+							<td><strong>TOTAL:</strong></td>
+							<td>$ '.number_format($traerVenta["total"], 2).'</td>
+						</tr>
+					  </table>';
+			
+			$html .= '<p><strong>Método de Pago:</strong> '.$traerVenta["metodo_pago"].'</p>';
+
+			// Escribir el HTML en el PDF
+			$pdf->writeHTML($html, true, false, true, false, '');
+
+			// Cerrar y mostrar el PDF
+			$pdf->Output('factura_'.$_GET["codigoVenta"].'.pdf', 'I');
+			exit; // Es importante salir para evitar cualquier salida adicional que pueda corromper el PDF
+
+		} else {
+			// Manejar el caso en que codigoVenta no está seteado
+			// Podrías redirigir o mostrar un mensaje de error
+			echo '<script>
+					swal({
+						  type: "error",
+						  title: "Error",
+						  text: "No se especificó un código de venta para generar la factura.",
+						  showConfirmButton: true,
+						  confirmButtonText: "Cerrar"
+						  }).then(function(result){
+									if (result.value) {
+									window.location = "ventas";
+									}
+								})
+				</script>';
+		}
+	}
 }

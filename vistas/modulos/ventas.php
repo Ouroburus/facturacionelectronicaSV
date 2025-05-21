@@ -167,7 +167,7 @@ if($xml){
 
                       </button>
                         
-                      <button class="btn btn-info btnImprimirFactura" codigoVenta="'.$value["codigo"].'">
+                      <button class="btn btn-info btnImprimirFactura jsImprimirFacturaPDF" codigoVenta="'.$value["codigo"].'">
 
                         <i class="fa fa-print"></i>PDF
 
